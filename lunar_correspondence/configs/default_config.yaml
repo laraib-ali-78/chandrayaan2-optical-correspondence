@@ -1,0 +1,90 @@
+# SIH 26166: Default Configuration for Chandrayaan-2 Optical Image Correspondence
+
+pipeline:
+  name: "Chandrayaan-2 Adaptive Image Correspondence Pipeline"
+  version: "1.0.0"
+  random_seed: 42
+
+sensors:
+  OHRC:
+    gsd_m_per_px: 0.25
+    format: "pds4"
+    tile_size: 1024
+    overlap: 128
+    denoise_method: "bilateral"
+  TMC2:
+    gsd_m_per_px: 5.0
+    format: "pds4"
+    swath_km: 20
+    denoise_method: "clahe"
+  IIRS:
+    gsd_m_per_px: 80.0
+    format: "qub"
+    wavelength_range_um: [0.5, 0.8]
+    intermediate_anchor: "LRO_WAC"
+  LRO_NAC:
+    gsd_m_per_px: 0.5
+    format: "geotiff"
+  LRO_WAC:
+    gsd_m_per_px: 100.0
+    format: "geotiff"
+
+preprocessing:
+  denoise:
+    bilateral_d: 5
+    bilateral_sigma_color: 35
+    bilateral_sigma_space: 35
+  clahe:
+    clip_limit: 2.5
+    tile_grid_size: [8, 8]
+
+multiscale:
+  physical_gsd_levels: [20.0, 5.0, 1.0, 0.3]  # matched physical scales in meters/pixel
+
+matching:
+  default_matcher: "lightglue"  # lightglue -> loftr -> roma
+  controller:
+    min_candidate_matches: 20
+    min_inlier_ratio_lightglue: 0.15
+    min_grid_coverage: 0.40
+    escalate_loftr_inlier_ratio: 0.10
+    escalate_roma_illum_diff_deg: 45.0
+  lightglue:
+    feature_type: "superpoint"
+    max_keypoints: 2048
+  sift_baseline:
+    nfeatures: 2000
+    contrastThreshold: 0.04
+    edgeThreshold: 10
+
+geometry:
+  verification_method: "MAGSAC++"
+  magsac:
+    threshold_coarse_px: 8.0
+    threshold_fine_px: 1.5
+    confidence: 0.999
+    max_iterations: 10000
+  spatial_selection:
+    grid_rows: 8
+    grid_cols: 8
+    max_per_cell: 5
+    coverage_threshold: 0.4
+
+subpixel:
+  method: "ecc"  # ecc with parabolic peak-fit fallback
+  patch_size: 48
+  ecc_max_iterations: 50
+  ecc_epsilon: 1e-4
+  fallback_method: "peak_fit"
+
+confidence:
+  high:
+    min_inlier_ratio: 0.40
+    min_grid_coverage: 0.60
+    max_rmse_px: 1.5
+  medium:
+    min_inlier_ratio: 0.20
+    min_grid_coverage: 0.35
+  low:
+    min_inlier_count: 8
+
