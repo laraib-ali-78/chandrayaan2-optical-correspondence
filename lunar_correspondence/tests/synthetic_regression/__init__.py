@@ -1,0 +1,2 @@
+"""Synthetic regression tests package."""
+
